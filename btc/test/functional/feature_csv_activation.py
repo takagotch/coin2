@@ -123,9 +123,59 @@ class BIP68_112_113Test(BitcoinTestFramework)
 
   def create_test_block(self, txs):
     block = create_block(self.tip, crate_conbase(self.tipheight + 1), self.last_block_time + 600)
+    block.nVersion = 4
+    block.vtx.extend(txs)
+    block.hashMerkleRoot = block.calc_merkle_root()
+    block.rehash()
+    block.solve()
+    return block
 
+  def send_blocks(self, blocks, success=True, reject_reason=None):
+    """
+    """
+    self.nodes[0].p2p.send_blocks_and_test(blocks, self.nodes[0], success=success, reject_reason=reject_reason)
 
+  def run_test(self):
+    self.nodes[0].add_p2p_connection(P2PDataStore())
 
+    self.nodes[0].info("Generate blocks in the past for coinbase outputs.")
+    long_past_time = int(time.time()) - 600 * 1000 
+    self.nodes[0].setmocktime(long_past_time - 100)
+    self.nodes[0].setmocktime(0)
+    self.tipheight = COINBASE_BLOCK_COUNT
+    self.tip = int(self.nodes[0].getbestblockhash(), 16)
+    self.nodeaddress = sefl.nodes[0].getnewaddress()
+
+    test_blocks = self.generate_blocks(CSV_ACTIVATION_HEIGHT-5 - COINBASE_BLOCK_COUNT)
+    self.send_blocks(test_blocks)
+    assert not softfork_active(self.nodes[0], 'csv')
+
+    bip68inputs = []
+    for i in range(16):
+      bip68inputs.append(send_generic_input_tx(self.nodes[0], self.coinbase_blocks, self.nodeaddress))
+    bip112basicinputs.append(inputs)
+
+  bip112diverseinputs = []
+  for j in range(2):
+    inputs = []
+    for i in range(16):
+      inputs.append(send_generic_input_tx(self.nodes[0], self.coinbase_blocks, self.nodeaddress))
+    bip112diverseinputs.append(inputs)
+
+  bip112specialinput = send_generic_input_tx(self.nodes[0], self.coinbase_blocks, self.nodeaddress)
+  bip112emptystackinput = send_generic_input_tx(self.nodes[0], self.coinbase_blocks, self.nodeaddress)
+
+  bip113input = send_generic_input_tx(self.nodes[0], self.coinbase_blocks, self.nodeaddress)
+
+  self.nodes[0].setmocktime(self.last_block_time + 600)
+  inputblockhash = self.nodes[0].generate(1)[0] 
+  self.nodes[0].setmocktime(0)
+  self.tipheight += 1
+  self.last_block_time += 600
+  assert_equal(len(self.nodes[0].getblock(inputblockhash, True)["tx"]), TESTING_TX_COUNT + 1)
+
+  test_blocks = self.generate_blocks(2)
+  self.send_blocks(test_blocks)
 
 
 
