@@ -177,6 +177,39 @@ class BIP68_112_113Test(BitcoinTestFramework)
   test_blocks = self.generate_blocks(2)
   self.send_blocks(test_blocks)
 
+  assert_equal(self.tipheight, CSV_ACTIVATION_HEIGHT - 2)
+  self.log.info("Height = {}, CSV not yet active (will activate for block {}, not {}").format(self.tipheight, CSV_ACTIVATION_HEIGHT, CSV_ACTIVATION_HEIGHT - 1))
+  assert not softfork_active(self.nodes[0], 'csv')
+
+  bip113tx_v1 = create_transaction(self.nodes[0], bip113input, self.nodeaddress, amount=Decimal("49.98"))
+  bip113tx_v1.vin[0].nSequence = 0xFFFFFFE
+  bip113tx_v1.nVersion = 1
+  bip113tx_v1 = create_transaction(self.nodes[0], bip113input, self.nodeaddress, amount=Decimal("49.98"))
+  bip113tx_v2.vin[0].nSequence = 0xFFFFFFE
+  bip113tx_v2.nVersion = 2
+
+  bip68txs_v1 = create_bip68txs(self.nodes[0], bip68inputs, 1, self.nodeaddress)
+  bip68txs_v2 = create_bip68txs(self.nodes[0], bip68inputs, 2, self.nodeaddress)
+
+  bip112txs_vary_nSequence_v1 = create_bip112txs(self.nodes[0], bip112basicinputs[0], False, 1, self.nodeaddress)
+  bip112txs_vary_nSequence_v2 = create_bip112txs(self.nodes[0], bip112basicinputs[0], False, 2, self.nodeaddress)
+
+  bip112txs_vary_nSequence_9_v1 = create_bip112txs(self.nodes[0], bip112basicinputs[1], False, 1, self.nodeaddress, -1)
+  bip112txs_vary_nSequence_9_v2 = create_bip112txs(self.nodes[0], bip112basicinputs[1], False, 2, self.nodeaddress, -1)
+
+  bip112txs_vary_OP_CSV_9_v1 = create_bip112txs(self.nodes[0], bip112diverseinputs[1], True, 1, self.nodeaddress, -1)
+  bip112txs_vary_OP_CSV_9_v2 = create_bip112txs(self.nodes[0], bip112diverseinputs[1], True, 2, self.nodeaddress, -1)
+
+  bip112tx_special_v1 = create_bip112special(self.nodes[0], bip112specialinput, 1, self.nodeaddress)
+  bip112tx_special_v2 = create_bip112special(self.nodes[0], bip112specialinput, 2, self.nodeaddress)
+
+  bip112tx_emptystack_v1 = create_bip112emptystack(self.nodes[0], bip112emptystackinput, 1, self.nodeaddress)
+  bip112tx_emptystack_v2 = create_bip112emptystack(self.nodes[0], bip112emptystackinput, 2, self.nodeaddress)
+
+  self.log.info("TESTING")
+
+  self.log.info("Pre-Soft Fork Tests. All txs should pass.")
+  self.log.info("Test version 1 txs")
 
 
 
