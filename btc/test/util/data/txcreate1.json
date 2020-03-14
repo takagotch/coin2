@@ -1,0 +1,41 @@
+{
+  "txid": "xxx",
+  "hash": "xxx",
+  "version": 2,
+  "size": 201,
+  "vsize": 201,
+  "weight": 804,
+  "locktime": 0,
+  "vin": [
+    {},
+    {},
+    {
+      "txid": "xxx",
+      "vout": 1,
+      "scriptSig": {
+        "asm": "",
+	"hex": ""
+      },
+      "sequence": 4294967295
+    }
+  ],
+  "vout": [
+    {
+      "value": 0.18000000,
+      "n": 0,
+      "scriptPubKey": {
+        "asm": "OP_DUP OP_HASH160 xxx OP_EQUALVERIFY OP_CHECKSIG",
+	"hex": "xxx",
+	"reqSigs": 1,
+	"type": "pubkeyhash",
+	"address": [
+	  "xxx"
+	]
+      }
+    },
+    {}
+  ]
+}
+
+
+
