@@ -1,30 +1,55 @@
+#!/usr/bin/env python3
 
+from decimal import Decimal
+from itertools import product
+from io import BytesIO
+from time
 
+from test_framework.blocktools import create_coinbase, create_block, create_transaction
+from test_framework.messages import ToHex, CTransaction
+from test_framework.mininode import P2PDataStore
+from test_framework.script import (
+  CScript, 
+  OP_CHECKSEQUENCEVERIFY,
+  OP_DROP,
+)
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util import (
+  CScript,
+  OP_CHECKSEQUENCEVERIFY,
+  OP_DROP,
+)
+from test_framework.test_framework import BitcoinTestFramework
+from test_framework.util.import (
+  assert_equal,
+  hex_str_to_bytes,
+  softfork_active,
+)
 
+"""
+BIP 113:
+bip113tx - modify the nLocktime variable
 
+BIP 68:
+bip68txs - 16 txs with nSequence relative locktime of 10 with various bits set as per the relative_locktimes below
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+BIP 112:
+bip112txs_vary_nSequence - 16 txs with nSequence relative_locktimes of 10 evaluated against 10 OP_CSV OP_DROP
+bip112txs_vary_nSequence_9 - 16 txs with nSequence relative_locktimes of 9 evaluated against 10 OP_CSV OP_DROP
+bip112txs_vary_OP_CSV - 16 txs with nSequence = 10 evaluated against varying {relative_locktimes of 10} OP_CSV OP_DROP
+bip112txs_vary_OP_CSV_9 - 16 txs with nSequence = 9 evaluated against varying {relative_locktimes of 10} OP_CSV OP_DROP
+bip112tx_special - test negative argument to OP_CSV
+bip112tx_emptystack - test empty stack (= no argument) OP_CSV
+"""
 
 TESTING_TXCOUNT = 83
-
-
-
-
-
-
-
+COINBASE_BLOCK_COUNT = TESTING_TX_COUNT
+BASE_RELATIVE_LOCKTIME = 10
+CSV_ACTIVATION_HEIGHT = 432
+SEQ_DISABLE_FLAG = 1 << 31
+SEQ_RANDOM_HIGH_BIT = 1 << 25
+SEQ_TYPE_FLAG = 1 << 22
+SEQ_RANDOM_LOW_BIT = 1 << 18
 
 def relative_locktime(sdf, srhb, stf, srlb):
   
