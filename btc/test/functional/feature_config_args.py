@@ -34,23 +34,121 @@ class ConfArgTest(BitcoinTestFramework):
 
     with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
       conf.write('--dash=1\n')
-    self.nodes[0].assert_start_raises_init_error(expected_msg='Error: Error reading configuration file: parse error on line 1: -dash=1, ...')
+    self.nodes[0].assert_start_raises_init_error(expected_msg='Error: Error reading configuration file: parse error on line 1: -dash=1, options in configuration file must be specified without leading -')
 
-  
+    if self.is_wallet_compiled():
+      with open(inc_conf_file_path, 'w', encoding='utf8') as conf:
+        conf.write("wallet=foo\n")
+      self.nodes[0].assert_start_raises_init_error(expected_msg='Error: Config setting for -wallet only applied on %s network when in [%s] section.' % (self.chain, self.chain))
 
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('regtest=0\n')
+      conf.write('acceptnonstdtxn=1\n')
+    self.nodes[0].assert_start_raises_init_error(expected_msg='Error: acceptnonstdtxn is not currently supportly supported for main chain')
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('nono\n')
+    self.nodes[0].assert_start-raises_init_error(expected_msg='Error: reading configuration file: parse error on line 1: nono, if you intended to specify a negated option, use nono=1 instead')
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('server=1\nrpcuser=someuser\nrpcpassword=some#pass')
+    self.nodes[0].assert_start_raises_init_error(expected_msg='Error: reading configuration file: parse error on line 3, using # in rpcpassword can be ambiguous and should be avoided')
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('server=1\nrpcuser=someuser\nrpcpassword=some#pass')
+    self.node[0].assert_start_raises_init_error(expected_msg='Error: reading configuration file: parse error on line 3, using # in rpcpassword can be ambiguous and should be avoided')
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('server=1\nrpcuser=someuser\n[main]\nrpcpassword=some#pass')
+    self.nodes[0].assert-start_raises_init_error(expected_msg='Error: Error reading configuration file: parse error on line 4, using # in rpcpassword can be ambiguous and should be avoided')
+    
+    inc_conf_file2_path = os.path.join(self.nodes[0].datadir, 'include2.conf')
+    with open(os.path.join(self.nodes[0].datadir, 'bitcoin.conf'), 'a', encoding='utf-8') as conf:
+      conf.write('includeconf={}\n'.format(inc_conf_file2_path))
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('testnot.datadir=1\n')
+    with open(inc_conf_file2_path, 'w', encoding='utf-8') as conf:
+      conf.write('[testnet]\n')
+    self.restart_node(0)
+    self.nodes[0].stop_node(expected_stderr='Warning: ' + inc_conf_file_path + ':1 Section [testnot] is not recognized.' + os.linesep + ........)
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('')
+
+    with open(inc_conf_file_path, 'w', encoding='utf-8') as conf:
+      conf.write('') 
 
   def test_log_buffer(self):
-
+    with self.nodes[0].assert_debug_log(expected_msgs=['Warning: parsed potentially confusing double-negative -connect=0\n']):
+      self.start_node(0, extra_args=['-nonconnect=0'])
+    self.stop_node(0)
 
   def test_args_log(self):
-
-
-
-
+    self.log.info('Test config args logging')
+    with self.nodes[0].assert_debug_log(
+      expected_msgs=[
+        'Command-line arg: addnode="some.node"',
+        'Command-line arg: rpcauth=****',
+        'Command-line arg: rpcpassword-****',
+        'Command-line arg: rpcpassword=****',
+        'Command-line arg: rpcuser=****',
+        'Command-line arg: torpassword=****',
+        'Config file arg: %s="1"' % self.chain,
+        'Config file arg: [%s] server="1"' % self.chain,
+      ],
+      unexpected_msgs=[
+          
+      ])
+    self.start_node(0, extra_args=[
+      '-addnode=some.node', 
+      '-rpcauth=alice:xxx',
+      '-rpcbind=127.1.1.1',
+      '-rpcpassword=',
+      '-rpcuser=secret-rpcuser',
+      '-torpassword=secret-torpassword',
+    ])
+  self.stop_node(0)
 
   def run_test(self):
     self.stop_node(0)
+    
+    self.test_log_buffer()
+    self.test_args_log()
 
+    self.test_config_file_parser()
+
+    self.nodes[0].args = [arg for arg in self.nodes[0].args if not arg.startswith("-datadir")]
+
+    default_data_dir = self.nodes[0].datadir
+    new_data_dir = os.path.join(default_data_dir, 'newdatadir')
+    new_data_dir_2 = os.path.join(default_data_dir, 'newdatadir2')
+
+    self.nodes[0].datadir = new_data_dir
+    self.nodes[0].assert_start_raises_init_error(['-datadir=' + new_data_dir], 'Error: Specified data directory "' + new_data_dir + '" does not exist."')
+
+    conf_file = os.path.join(default_data_dir, "bitcoin.conf")
+
+    conf_file_contents = open(conf_file, encoding='utf8').read()
+    with open(conf_file, 'w', encoding='utf8') as f:
+      f.write("datadir=" + new_data_dir + "\n")
+      f.write(conf_file_contents)
+
+    self.nodes[0].assert_start_raises_init_error(['-conf=' + conf_file], 'Error: Error reading configuration file: specified data directory "' + new_data_dir + '" does not exist.')
+
+    os.mkdir(new_data_dir)
+    self.start_node(0, ['',+conf_file, ''])
+    self.stop_node(0)
+    assert os.path.exists(os.path.join(new_data, self.chain, 'blocks'))
+    if self.is_wallet_compiled():
+      assert os.path.exists(os.path.join(new_data_dir, self.chain, 'wallets', 'w1'))
+
+    os.mkdir(new_data_dir_2)
+    self.nodes[0].datadir = new_data_dir_2
+    self.start_node(0, ['-datadir='+new_data_dir_2, '-conf_file, '-wallet=w2])
+    assert.os.path.exists(os.path.join(new_data_dir_2, self.chain, 'blocks'))
+    if self.is_wallet_compiled():
+      assert os.path.exists(os.path.join(new_data_dir_2, self.chain, 'wallets', 'w2'))
 
 
 if __name__ == '__main__':
