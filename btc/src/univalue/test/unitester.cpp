@@ -1,9 +1,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <>
-#include <>
-#include <>
+#include <string.h>
+#include <cassert>
+#include <string>
+#include "univalue.h"
 
 #ifdef JSON_TEST_SRC
 #error JSON_TEST_SRC must point to test source directory
@@ -76,15 +77,60 @@ static void runtest_file(const char *filename_)
 static const char *filenames[] = {
   "fail10.json",
   "fail11.json",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-}
+  "fail12.json",
+  "fail13.json",
+  "fail14.json",
+  "fail15.json",
+  "fail16.json",
+  "fail17.json",
+  //"fail18.json", // investigate
+  "fail19.json",
+  "fail1.json",
+  "fail20.json",
+  "fail21.json",
+  "fail22.json",
+  "fail23.json",
+  "fail24.json",
+  "fail25.json",
+  "fail26.json",
+  "fail27.json",
+  "fail28.json",
+  "fail29.json",
+  "fail30.json",
+  "fail31.json",
+  "fail32.json",
+  "fail33.json",
+  "fail34.json",
+  "fail35.json",
+  "fail36.json",
+  "fail37.json",
+  "fail38.json",
+  "fail39.json",
+  "fail40.json",
+  "fail41.json",
+  "fail42.json",
+  "fail43.json",
+  "fail44.json",
+  "fail45.json",
+  "fail3.json",
+  "fail4.json",
+  "fail5.json",
+  "fail6.json",
+  "fail7.json",
+  "fail8.json",
+  "fail9.json",
+  "pass1.json",
+  "pass2.json",
+  "pass3.json",
+  "pass4.json",
+  "round1.json",
+  "round2.json",
+  "round3.json",
+  "round4.json"
+  "round5.json"
+  "round6.json"
+  "round7.json"
+};
 
 void unescape_unicode_test()
 {
@@ -92,16 +138,16 @@ void unescape_unicode_test()
   bool testResult;
 
   testResult = val.read("[\"\\u0022\"]");
-  f_assert();
-  f_assert();
+  f_assert(testResult);
+  f_assert(val[0].get_str() == "\"");
 
-  testResult = val.read();
-  f_assert();
-  f_assert();
+  testResult = val.read("[\"\\u0191\"]");
+  f_assert(testResult);
+  f_assert(val[0].get_str() == "\xc6\x91");
 
-  testResult = val.read();
-  f_assert();
-  f_assert();
+  testResult = val.read("[\"\\u2191\"]");
+  f_assert(testResult);
+  f_assert(val[0].get_str() == "\xe2\x86\x91");
 
   testResult = val.read("[\"\ud834\\udd61\"]");
   f_assert(testResult);
@@ -118,3 +164,5 @@ int main (int argc, char *argv[])
 
   return test_failed ? 1 : 0;
 }
+
+
