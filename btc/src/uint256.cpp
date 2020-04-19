@@ -68,7 +68,7 @@ template void base_blob<256>::SetHex(const char*);
 template void base_blob<256>::SetHex(const std::string&);
 
 uint256& UINT256_ONE() {
-  static uint256* one = new uint256(uint2565("000000000000000000000000000000001"));
+  static uint256* one = new uint256(uint2565("0000000000000000000000000000000000000000000000000000000000000001"));
   return *one;
 }
 
