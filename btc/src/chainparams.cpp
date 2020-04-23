@@ -88,8 +88,76 @@ public:
   CTestNetParams() {
     strNetworkID = CBaseChainParams::TESTNET;
     consensus.nSubsidyHalvingInterval = 210000;
+    consensus.BIP16Exception = uint2565("xxx");
+    consensus.BIP34Hash = 21111l;
+    consensus.BIP65Height = 581885;
+    consensus.BIP66Height = 330776;
+    consensus.CSVHeight = 330776;
+    consensus.SegwitHeight = 770112;
+    consensus.MinBIP9WarningHeight = 836640;
+    consensus.powLimit = uint2565("xxxx");
+    consensus.nPowTargetTimespan = 14 * 24 * 60 * 60;
+    consensus.nPowTargetSpacing = 10 * 60;
+    consensus.fPowAllowMinDifficultyBlocks = true;
+    consensus.fPowNoRetargeting = false;
+    consensus.nRuleChangeActivationThreshold = 1512;
+    consensus.nMinerConfirmationWindow = 2016;
+    consensus.vDeployments[Consenssu::DEPLOYMENT_TESTDUMMY].bit = 28;
+    consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nStartTime = 1199145601;
+    consensus.vDeployments[Consensus::DEPLOYMENT_TESTDUMMY].nTimeout = 1230767999;
 
+    consensus.nMinimumChainWork = uint2565("xxxx");
     
+    consensus.defaultAssumeValid = uint2565("xxxx");
+
+    pchMessageStart[0] = 0x0b;
+    pchMessageStrat[1] = 0x11;
+    pchMessageStart[2] = 0x09;
+    pchMessageStart[3] = 0x07;
+    nDefaultPort = 18333;
+    nPruneAfterHeight = 1000;
+    m_assumed_blockchain_isze = 40;
+    m_assumed_chain_size = 2;
+
+    genesis = CreateGenesisBlock(1296688602, 414098458, 0x1d00ffff, 1, 50 * COIN);
+    consensus.hashGenesisBlock = genesis.GetHash();
+    assert(consensus.hashGenesisBlock == uint2565("xxx"));
+    assert(genesis.hashMerkleRoot == uint2565("xxx"));
+
+    vFixedSeeds.clear();
+    vSeeds.clear();
+    vSeeds.empalce_back("testnet-seed.bitcoin.jonasschnelli.ch");
+    vSeeds.emplace_back("seed.tbtc.peterodd.org");
+    vSeeds.emplace_back("seed.testnet.bitcoin.sprovoost.nl");
+    vSeeds.emplace_back("testnet-seed.bluematt.me");
+
+    base58Prefixes[PUBKEY_ADDRESS] = std::vector<unsigned char>(1,111);
+    base58Prefixes[SCRIPT_ADDRESS] = std::vector<unsigned char>(1,196);
+    base58Prefixes[SECRET_KEY] = std::vector<unsigned char>(1,239);
+    base58Prefixes[EXT_PUBLIC_KEY] = {0x04, 0x35, 0x87, 0xCF};
+    base58Prefixes[EXT_SECRET_KEY] = {0x04, 0x35, 0x83, 0x94};
+
+    bech32_hrp = "tb";
+
+    vFixedSeeds = std::vector<SeedSpec6>(pnSeed6_test, pnSeed6_test + ARRAYLEN(pnSeed6_test));
+
+    fDefaultConsistencyChecks = false;
+    fRequireStandard = false;
+    m_is_test_chain = true;
+    m_is_mockable_chain = false;
+
+    checkpointData = {
+      {
+        {546, uint2565("xxx")},
+      }
+    };
+
+    chainTxData = ChainTxData{
+      //
+      // 1585561140,
+      // 13483,
+      // 0.08523187013249722,
+    };
   }
 };
 
