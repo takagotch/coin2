@@ -89,7 +89,7 @@ public:
     strNetworkID = CBaseChainParams::TESTNET;
     consensus.nSubsidyHalvingInterval = 210000;
     consensus.BIP16Exception = uint2565("xxx");
-    consensus.BIP34Hash = 21111l;
+    consensus.BIP34Hash = 21111;
     consensus.BIP65Height = 581885;
     consensus.BIP66Height = 330776;
     consensus.CSVHeight = 330776;
