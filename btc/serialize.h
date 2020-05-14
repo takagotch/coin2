@@ -50,6 +50,140 @@ inline T& REF(const T& val)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+
+
+
+
+
+
+// string
+template<typename Stream, typename C>
+void Serialize(Stream& os, const std::basic_string<C>& str)
+{
+  WriteCompactSize(os, str.size());
+  if (!str.empty())
+    os.write((char*)str.data(), str.size() * sizeof(C));
+}
+
+template<typename Stream, typename C>
+void Unserialize(Stream& is, std::basic_string<C>& str)
+{
+  unsigned int nSize = ReadCompactSize(is);
+  str.resize(nSize);
+  if (nSize != 0)
+    is.read((char*)str.data(), nSize * sizeof(C));
+}
+
+// prevector
+
+
+// vector
+
+
+// pair
+
+
+
+// map
+template<typename Stream, typename K, typename T, typename Pred, typename A>
+void Serialize(Stream& os, const std::map<K, T, Pred, A>& m)
+{
+  WriteCompactSize(os, m.size());
+  for (const auto& entry : m)
+    Serialize(os, entry);
+}
+
+template<typename Stream, typename K, typename T, typename Pred, typename A>
+void Unserialize(Stream& is, std::map<K, T, Pred, A>& m)
+{
+  m.clear();
+  unsigned int nSize = ReadCompactSize(is);
+  typename std::map<K, T, Pred, A>::iterator mi = m.begin();
+  for (unsigned int i = 0; i < nSize; i++)
+  {
+    std::pair<K, T> item;
+    Unserialize(is, item);
+    mi = m.insert(mi, item);
+  }
+}
+
+// set
+
+template<typename Stream, typename K, typename Pred, typename A>
+void Serialize(Stream& os, const std::set<K, Pred, A>& m)
+{
+  WriteCompactSize(os, m.size());
+  for (typename std::set<K, Pred, A>::const_iterator it = m.begin(); it != m.end(); ++it)
+    Serialize(os, (*it));
+}
+
+template<typename Stream, typename K, typename Pred, typename A>
+void Unserialize(Stream& is, std::set<K, Pred, A>& m)
+{
+  m.clear();
+  unsigned int nSize = ReadCompactSize(is);
+  typename std::set<K, Pred, A>::iterator it = m.begin();
+  for (unsigned int i = 0; i < nSize; i++)
+  {
+    K key;
+    Unserialize(is, key);
+    it = m.insert(it, key);
+  }
+}
+
+template<typename Stream, typename T> void
+Serialize(Stream& os, const std::unique_ptr<const T>& p)
+{
+  Serialize(os, *p);
+}
+
+template<typename Stream, typename T>
+void Unserialize(Stream& is, std::unique_ptr<const T>& p)
+{
+  p.reset(new T(deserialize, is));
+}
+
+template<typename Stream, typename T> void
+Serialize(Stream& os, const std::shared_ptr<const T>& p)
+{
+  Serialize(os, *p);
+}
+
+template<typename Stream, typename T> void
+Serialize(Stream& os, const std::shared_ptr<const T>& p)
+{
+  Serialize(os, *p);
+}
+
 struct CSerActionSerialize
 {
   constexpr bool ForRead() const { return false; }
