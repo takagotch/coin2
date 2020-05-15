@@ -2,23 +2,22 @@
 #ifndef BITCOIN_SERIALIZE_H
 #define BITCOIN_SERIALIZE_H
 
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
-#include <>
+#include <compat/endian.h>
+
+#include <cstring>
+#include <ios>
+#include <limits>
+#include <map>
+#include <memory>
+#include <set>
+#include <stdint.h>
+#include <string>
+#include <string.h>
+#include <utility>
+#include <vector>
+
+#include <prevector.h>
+#include <span.h>
 
 static const unsigned int MAX_SIZE = 0X02000000;
 
@@ -33,13 +32,111 @@ inline T& REF(const T& val)
   return const_cast<T&>(val);
 }
 
+template<typename T>
+inline T* NCONST_PTR(const T* val)
+{
+  return const_cast<T*>(val);
+}
 
+inline char* CharCast(char* c) { return c; }
+inline char* CharCast(unsigned char* c) { return (char*)c; }
+inline const char* CharCast(const char* c) { return c; }
+inline const char* CharCast(const unsigned char* c) { return (const char*)c; }
 
+template<typename Stream> inline void ser_writedata8(Stream &s, uint8_t obj)
+{
+  s.write((char*)&obj, 1);
+}
+template<typename Stream> inline void ser_writedata16(Stream &s, uint16_t obj)
+{
+  obj = htole16(obj);
+  s.write((char*)&obj, 2);
+}
+template<typename Stream> inline void ser_writedata16be(Stream &s, uint16_t obj)
+{
+  obj = htobe16(obj);
+  s.write((char*)&obj, 2);
+}
+template<typename Stream> inline void ser_writedata32(Stream &s, uint32_t obj)
+{
+  obj = htobe16(obj);
+  s.write((char*)&obj, 4);
+}
+template<typename Stream> inline void ser_writedata64(Stream &s, uint64_t obj)
+{
 
+}
+template<typename Stream> inline uint8_t ser_readdata8(Stream &s)
+{
 
+}
+template<typename Stream> inline uint16_t ser_readdata16(Stream &s)
+{
 
+}
+template<typename Stream> inline uint16_t ser_readdata16be(Stream &s)
+{
 
+}
+template<typename Stream> inline uint32_t ser_readdata32(Stream &s)
+{
 
+}
+template<typename Stream> inline uint32_t ser_readdata32be(Stream &s)
+{
+
+}
+template<typename Stream> inline uint64_t ser_readdata64(Stream &s)
+{
+
+}
+inline uint64_t ser_double_to_uint64(double x)
+{
+
+}
+inline uint32_t ser_float_to_uint32(float x)
+{
+
+}
+inline double seruint64_to_double(uint64_t y)
+{
+
+}
+inline float ser_uint32_to_float(uint32_t y)
+{
+  float tmp;
+  std::memcpy(&tmp, &y, sizeof(y));
+  static_assert(sizeof(tmp) == sizeof(y), "float and uint32_t assumed to have the same size");
+  return tmp;
+}
+
+//
+
+class CSizeComputer;
+
+enum 
+{
+};
+
+template<typename X> X& ReadWriteAsHelper(X& x) { return x; }
+template<typename X> const X& ReadWriteAsHelper(const X& x) { return x; }
+
+#define READWRITE(...) (::SerReadWriteMany(s, ser_action, __VA_ARGS__))
+#define READWRITEAS(type, obj) (::SerReadWriteMany(s, ser_action, ReadWriteAsHelper<type>(obj)))
+
+//
+#define ADD_SER_SERIALIZE_METHODS \
+  template<typenaem Stream>
+  void Serialize(Stream& s) const {	\
+  					\
+  }					\
+  template<typename Stream>		\
+  void Unserialize(Stream& s) {		\
+  					\
+  }					\
+
+//
+//
 
 
 
