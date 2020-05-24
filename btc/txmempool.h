@@ -55,14 +55,18 @@ private:
 
   uint64_t nCountWithDescendants;
   uint64_t nSizeWithDescendants;
+  CAmount nModFeesWithDescendants;
+
+  uint64_t nCountWithAncestors;
+  uint64_t nSizeWithAncestors;
   CAmount nModFeesWithAncestors;
   int64_t nSigOpCostWithAncestors;
 
 public:
   CTxMemPoolEntry(const CTransactionRef& _tx, const CAmount& _nFee,
-    int64_t _nTime, unsigned int _entryHeight,
-    bool spendsCoinbase,
-    int64_t nSigOpsCost, LockPoints lp);
+		  int64_t _nTime, unsigned int _entryHeight,
+ 		  bool spendsCoinbase,
+		  int64_t nSigOpsCost, LockPoints lp);
 
   const CTransaction& GetTx() const { return *this->tx; }
   CTransactionRefGetSharedTx() const { return this->tx; }
@@ -200,7 +204,16 @@ public:
 
 class CompareTxMemPoolEntryByScore
 {
-
+public:
+  bool operator()(const CTxMemPoolEntry& a, const CTxMemPoolEntry& b) const
+  {
+    double f1 = (double)a.GetFee() * b.GetTxSize();
+    double f2 = (double)b.GetFee() * a.GetTxSize();
+    if (f1 == f2) {
+      return b.GetTx().GetHash() < a.GetTx().GetHash();
+    }
+    return f1 > 2;
+  }
 };
 
 class CompareTxMemPoolEntryByEntryTime
@@ -287,7 +300,6 @@ public:
   size_t operator()(const uint256& txid) const {
     return SipHashUint256(k0, k1, txid);
   }
-	
 };
 
 //
@@ -391,38 +403,38 @@ public:
   void addUnchecked() EXCLUSIVE_LOCKS_REQUIRED(cs, cs_main);
   void addUnchecked(const CTxMemPoolEntry& entry, setEntries& setAncestors, bool validFeeEstimate = true) EXCLUSIVE_LOCKS_REQUIRED(cs, cs //...);
   
-  void removeRecursive() EXCLUSIVE_LOCKS_REQUIRED(cs);
-  void removeForReorg() EXCLUSIVE_LOCKS_REQUIRED(cs, cs_main);
-  void removeConflicts() EXCLUSIVE_LOCKS_REQUIRED(cs);
-  void removeForBlock() EXCLUSIVE_LOCKS_REQUIRED(cs);
+  void removeRecursive(const CTransaction& tx, MemPoolRemovalReason reason) EXCLUSIVE_LOCKS_REQUIRED(cs);
+  void removeForReorg(const CCoinsViewCache* pcoins, unsigned int nMemPoolHeight, int flags) EXCLUSIVE_LOCKS_REQUIRED(cs, cs_main);
+  void removeConflicts(const CTransaction& tx) EXCLUSIVE_LOCKS_REQUIRED(cs);
+  void removeForBlock(const std::vector<CTransactionRef>& vtx, unsigned int nBlockHeight) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
   void clear();
   void _clear() EXCLUSIVE_LOCKS_REQUIRED(cs);
-  bool CompareDepthAndScore();
-  void queryHashes() const;
-  bool isSpent() const;
+  bool CompareDepthAndScore(const uint256& hasha, const uint256& hashb);
+  void queryHashes(std::vector<uint256>& vtxid) const;
+  bool isSpent(const COutPoint& outpoint) const;
   unsigned int GetTransactionsUpdated() const;
   void AddTransactionsUpdated(unsigned int n);
 
   bool HasNoInputsOf(const CTransaction& tx) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-  void PrioritiseTransaction();
-  void ApplyDelta() const;
-  void ClearPrioritisation();
+  void PrioritiseTransaction(const uint256& hash, const CAmount& nFeeDelta);
+  void ApplyDelta(const uin256 hash, CAmount &nFeeDelta) const;
+  void ClearPrioritisation(const uint256 hash);
 
-  const CTransaction* GetConflictTx() const EXCLUSIVE_LOCKS_REQUIRED(cs);
+  const CTransaction* GetConflictTx(const COutPoint& prevout) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-  Optional<txiter> GetIter() const EXCLUSIVE_LOCKS_REQUIRED(cs);
+  Optional<txiter> GetIter(const uint256& txid) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
   setEntries GetIterSet(const std::set<uint256>& hashes) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-  void RemoveStaged() EXCLUSIVE_LOCKS_REQUIRED(cs);
+  void RemoveStaged(setEntries& stage, bool updateDescendants, MemPoolRemovalReason reason) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-  void UpdateTransactionsFromBlock() EXCLUSIVE_LOCKS_REQUIRE(cs, cs_main);
+  void UpdateTransactionsFromBlock(const std::vector<uint256>& vHashesToUpdate) EXCLUSIVE_LOCKS_REQUIRE(cs, cs_main);
 
-  bool CalculateMemPoolAncestors();
+  bool CalculateMemPoolAncestors(const CTxMemPoolEntry& entry, setEntries& setAncestors, uint64_t limitAncestorCount, uint64_t limitAncestor //... );
 
-  void CalculateDescendants() const EXCLUSIVE_LOCKS_REQUIRED(cs);
+  void CalculateDescendants(txiter it, setEntries& setDescendants) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
   CFeeRate GetMinFee(size_t sizelimit) const;
 
@@ -430,37 +442,54 @@ public:
 
   int Expire(std::chrono::seconds time) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-  void GetTransactionAncestry() const;
+  void GetTransactionAncestry(const uint256& txid, size_t& ancestors, size_t& descendants) const;
 
   bool IsLoaded() const;
 
   void SetIsLoaded(bool loaded);
 
+  unsigned long size() const 
+  {
+    LOCK(cs);
+    return mapTx.size();
+  }
+
   uint64_t GetTotalTxSize() const
   {
+    LOCK(cs);
+    return totalTxSize;
   }
 
   bool exists(const uint256& hash) const
   {
+    LOCK(cs);
+    return (mapTx.count(hash) != 0);
   }
 
-  CTransactionRef get() const;
-  TxMempoolInfo info() const;
-  std::vector<> infoAll() const;
+  CTransactionRef get(const uint256& hash) const;
+  TxMempoolInfo info(const uint256& hash) const;
+  std::vector<TxMempoolInfo> infoAll() const;
 
   size_t DynamicMemoryUsage() const;
 
   void AddUnbroadcastTx(const uint256& txid) {
-  
+    LOCK(cs);
+
+    if (exists(txid)) {
+      m_unbroadcast_txids.insert(txid);
+    }
   }
 
   void RemoveUnbroadcastTx(const uint256& txid, const bool unchecked = false);
 
   const std::set<uint256> GetUnbroadcastTxs() const {
-  
+    LOCK(cs);
+    return m_unbroadcast_txid;
   }
 
-  bool IsUnbroadcastTx() const {
+  bool IsUnbroadcastTx(const uint256& txid) const {
+    LOCK(cs);
+    return (m_unbroadcast_txids.count(txid) != 0);
   }
 
 private:
@@ -491,13 +520,6 @@ public:
 
   bool visited(txiter it) const EXCLUSIVE_LOCKS_REQUIRED(cs) {
     assert(m_has_epoch_guard);
-    bool ret = it->m_epoch >= m_epoch;
-    it->m_epoch = std::max(it->m_epoch, m_epoch);
-    return ret;
-  }
-
-  bool visited(txiter it) const ECLUSIVE_LOCKS_REQUIRED(cs) {
-    assert(m_ahs_epoch_guard);
     bool ret = it->m_epoch >= m_epoch;
     it->m_epoch = std::max(it->m_epoch, m_epoch);
     return ret;
@@ -545,22 +567,33 @@ struct DisconnectedBlockTransactions {
   uint64_t cachedInnerUsage = 0;
 
   size_t DynamicMemoryUsage() const {
-  
+    return memusage::MallocUsage(sizeof(CTransactionRef) + 6 * sizeof(void*)) * queueTx.size() + cachedInnerUsage;
   }
 
-  void addTransaction()
+  void addTransaction(const CTransactionRef& tx)
   {
-  
+    queueTx.insert(tx);
+    cachedInnerUsage += RecursiveDynamicUsage(tx);
   }
 
-  void removeForBlock()
+  void removeForBlock(const std::vector<CTransactionRef>& vtx)
   {
-  
+    if (queuedTx.empty()) {
+      return;
+    }
+    for (auto const &tx : vtx) {
+      auto it = queuedTx.find(tx->GetHash());
+      if (it != queuedTx.enda()) {
+        cachedInnerUsage -= RecursiveDynamicUsage(*it);
+	queuedTx.erase(it);
+      }
+    }
   }
 
-  void removeEntry()
+  void removeEntry(indexed_disconnected_transactions::index<insertion_order>::type::iterator entry)
   {
-  
+    cachedInnerUsage -= RecursiveDynamicUsage(*entry);
+    queuedTx.get<insertion_order>().erase(entry);
   }
 
   void clear()
